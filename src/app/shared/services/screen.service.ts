@@ -1,4 +1,4 @@
-import {Inject, Injectable, OnDestroy} from '@angular/core';
+import {Inject, Injectable, NgZone, OnDestroy} from '@angular/core';
 import {fromEvent} from "rxjs/internal/observable/fromEvent";
 import {debounceTime} from "rxjs/operators";
 import {BehaviorSubject} from "rxjs/internal/BehaviorSubject";
@@ -22,17 +22,20 @@ export class ScreenService implements OnDestroy {
     return this._screenMode$.asObservable()
   }
 
-  constructor(@Inject(CONFIG_TOKEN) private _config: any) {
-    this._subscription = fromEvent(window, 'resize')
-      .pipe(
-        debounceTime(500)
-      )
-      .subscribe(() => {
-        const newScreenMode = this._determineScreenMode(window.innerWidth);
-        if (newScreenMode !== this.screenMode) {
-          this.screenMode = newScreenMode
-        }
-      });
+  constructor(@Inject(CONFIG_TOKEN) private _config: any,
+              private _zone: NgZone) {
+    this._zone.runOutsideAngular(() => {
+      this._subscription = fromEvent(window, 'resize')
+        .pipe(
+          debounceTime(500)
+        )
+        .subscribe(() => {
+          const newScreenMode = this._determineScreenMode(window.innerWidth);
+          if (newScreenMode !== this.screenMode) {
+            this.screenMode = newScreenMode
+          }
+        });
+    });
 
     this.screenMode = this._determineScreenMode(window.innerWidth);
   }
